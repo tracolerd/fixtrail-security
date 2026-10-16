@@ -1,6 +1,9 @@
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:200F16,50:BE123C,100:0B1220&height=190&section=header&text=FixTrail%20Security&fontSize=42&fontColor=F1F5F9&fontAlignY=38&animation=fadeIn&desc=Planned%20vulnerability%20remediation%20tracking%20from%20finding%20to%20retest&descAlignY=61&descSize=15" alt="FixTrail Security animated project banner" width="100%" />
 </p>
+<h1 align="center">FixTrail Security</h1>
+<p align="center"><img src="https://img.shields.io/badge/Stage-Planning-8B5CF6" alt="Planning stage" /></p>
+
 
 **Follow vulnerabilities from discovery through verified remediation.**
 
