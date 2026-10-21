@@ -215,7 +215,7 @@ Set the development environment and ensure the connection string points to your 
 ~~~powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=fixtrail;Username=postgres;Password=postgres"
-dotnet ef database update --project FixTrailSecurity.Api
+dotnet ef database update --project FixTrailSecurity.Api --startup-project FixTrailSecurity.Api
 ~~~
 
 Use a different local password in the connection string if your PostgreSQL setup requires it. Keep credentials out of source control.
