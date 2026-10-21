@@ -8,20 +8,17 @@ import { Finding } from '../models/finding.model';
 })
 export class ApiService {
   private http = inject(HttpClient);
-  // Default URL when running local dotnet run (HTTPS might use 5001, HTTP uses 5000)
   private apiUrl = 'http://localhost:5000/api';
-  // --- Assets ---
   getAssets(): Observable<Asset[]> {
-    return this.http.get<Asset[]>(${this.apiUrl}/assets);
+    return this.http.get<Asset[]>(`${this.apiUrl}/assets`);
   }
   createAsset(asset: Partial<Asset>): Observable<Asset> {
-    return this.http.post<Asset>(${this.apiUrl}/assets, asset);
+    return this.http.post<Asset>(`${this.apiUrl}/assets`, asset);
   }
-  // --- Findings ---
   getFinding(id: string): Observable<Finding> {
-    return this.http.get<Finding>(${this.apiUrl}/findings/);
+    return this.http.get<Finding>(`${this.apiUrl}/findings/${id}`);
   }
   createFinding(finding: Partial<Finding>): Observable<any> {
-    return this.http.post<any>(${this.apiUrl}/findings, finding);
+    return this.http.post<any>(`${this.apiUrl}/findings`, finding);
   }
 }

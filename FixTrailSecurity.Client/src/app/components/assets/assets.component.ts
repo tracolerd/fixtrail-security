@@ -7,7 +7,7 @@ import { Asset } from '../../models/asset.model';
   selector: 'app-assets',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  template: 
+  template: `
     <div style="font-family: sans-serif;">
       <h3 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">Assets Inventory</h3>
       <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #ddd;">
@@ -41,7 +41,7 @@ import { Asset } from '../../models/asset.model';
         </tbody>
       </table>
     </div>
-  
+  `
 })
 export class AssetsComponent implements OnInit {
   apiService = inject(ApiService);
@@ -68,7 +68,7 @@ export class AssetsComponent implements OnInit {
     this.apiService.createAsset(this.newAsset).subscribe({
       next: (created) => {
         this.assets.push(created);
-        this.newAsset = { name: '', environment: '', owner: '' }; // reset
+        this.newAsset = { name: '', environment: '', owner: '' };
       },
       error: (err) => {
         console.error('Error creating asset', err);
