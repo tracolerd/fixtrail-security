@@ -1,6 +1,10 @@
-﻿<nav style="background: #1a1a1a; padding: 15px 20px; display: flex; align-items: center; gap: 30px;">
-  <h2 style="color: #fff; margin: 0; font-family: sans-serif; letter-spacing: 1px;">FixTrail Security</h2>
-  <a routerLink="/assets" style="color: #4CAF50; text-decoration: none; font-family: sans-serif; font-weight: bold;">Assets Dashboard</a>
+﻿<nav style="background: #1a1a1a; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;">
+  <div style="display: flex; gap: 30px; align-items: center;">
+    <h2 style="color: #fff; margin: 0; font-family: sans-serif; letter-spacing: 1px;">FixTrail Security</h2>
+    <a routerLink="/assets" style="color: #4CAF50; text-decoration: none; font-family: sans-serif; font-weight: bold;">Assets Dashboard</a>
+  </div>
+  <!-- Simple reload for logout -->
+  <button onclick="localStorage.removeItem('jwt_token'); window.location.href='/login';" style="background: transparent; color: #ccc; border: 1px solid #555; padding: 5px 10px; cursor: pointer;">Logout</button>
 </nav>
 <main style="padding: 20px; max-width: 1200px; margin: 0 auto;">
   <router-outlet></router-outlet>
