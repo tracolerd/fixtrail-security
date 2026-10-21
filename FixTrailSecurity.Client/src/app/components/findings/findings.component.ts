@@ -30,7 +30,7 @@ import { Finding } from '../../models/finding.model';
         <!-- JSON File Importer -->
         <div style="flex: 1; background: #e2e3e5; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #d6d8db;">
           <h4 style="margin-top: 0; color: #383d41;">Import from Scanner (.json)</h4>
-          <p style="font-size: 13px; color: #666; margin-top: 0;">Format: [{"Title":"...", "Source":"...", "SourceSeverity":"..."}]</p>
+          <p style="font-size: 13px; color: #666; margin-top: 0;">Format: Array of Finding Objects</p>
           <input type="file" accept=".json" (change)="onFileSelected($event)" style="margin-bottom: 15px;" />
           <br/>
           <button (click)="uploadFile()" [disabled]="!selectedFile" [ngStyle]="{'background': selectedFile ? '#28a745' : '#ccc'}" style="padding: 9px 15px; color: white; border: none; border-radius: 3px; cursor: pointer;">Upload & Parse JSON</button>
