@@ -27,6 +27,9 @@ jobs:
     - name: Install Angular Dependencies
       working-directory: ./FixTrailSecurity.Client
       run: npm install
+    - name: Run Angular Unit Tests
+      working-directory: ./FixTrailSecurity.Client
+      run: npm run test -- --watch=false --browsers=ChromeHeadless
     - name: Build Angular Client
       working-directory: ./FixTrailSecurity.Client
       run: npm run build
