@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="500" viewBox="0 0 1600 500" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">FixTrail Security — vulnerability remediation tracking</title>
+  <desc id="desc">A dark red and charcoal security dashboard illustration showing vulnerability discovery, assigned remediation, evidence, and retesting.</desc>
+  <defs>
+    <linearGradient id="bg" x1="70" y1="15" x2="1510" y2="485" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#160D14"/><stop offset=".48" stop-color="#25101A"/><stop offset="1" stop-color="#0B1220"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FB7185"/><stop offset=".52" stop-color="#E11D48"/><stop offset="1" stop-color="#FDA4AF"/>
+    </linearGradient>
+    <linearGradient id="card" x1="1050" y1="90" x2="1490" y2="405" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2B1A28"/><stop offset="1" stop-color="#121827"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0" cy="0" r="1" gradientTransform="translate(1270 230) rotate(90) scale(250 340)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E11D48" stop-opacity=".25"/><stop offset="1" stop-color="#E11D48" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0V30" stroke="#FCA5A5" stroke-opacity=".075"/></pattern>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#020617" flood-opacity=".42"/></filter>
+  </defs>
+  <rect width="1600" height="500" rx="28" fill="url(#bg)"/>
+  <rect width="1600" height="500" rx="28" fill="url(#grid)"/>
+  <rect width="1600" height="500" rx="28" fill="url(#halo)"/>
+  <path d="M0 421C238 359 422 465 625 416C819 370 938 337 1111 381C1300 429 1447 397 1600 334V500H0V421Z" fill="#050910" fill-opacity=".55"/>
+  <path d="M74 78H98" stroke="url(#red)" stroke-width="4" stroke-linecap="round"/>
+  <text x="112" y="84" fill="#FDA4AF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" font-weight="700" letter-spacing="4.5">VULNERABILITY OPERATIONS  /  005</text>
+  <text x="86" y="173" fill="#FFF1F2" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="63" font-weight="750" letter-spacing="-2.4">FixTrail Security</text>
+  <text x="91" y="223" fill="#FECDD3" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="25" font-weight="500">From finding to verified remediation.</text>
+  <text x="91" y="274" fill="#A1A1AA" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="18">Trace assets, scanner findings, remediation evidence, and retests.</text>
+  <g font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="1.15">
+    <rect x="91" y="321" width="157" height="38" rx="19" fill="#BE123C" fill-opacity=".17" stroke="#FB7185" stroke-opacity=".65"/>
+    <circle cx="111" cy="340" r="4" fill="#FDA4AF"/><text x="124" y="344.5" fill="#FFE4E6">ASSET CONTEXT</text>
+    <rect x="260" y="321" width="199" height="38" rx="19" fill="#7F1D1D" fill-opacity=".19" stroke="#F87171" stroke-opacity=".6"/>
+    <circle cx="280" cy="340" r="4" fill="#FCA5A5"/><text x="293" y="344.5" fill="#FEE2E2">OWNER + DEADLINE</text>
+    <rect x="471" y="321" width="210" height="38" rx="19" fill="#064E3B" fill-opacity=".2" stroke="#6EE7B7" stroke-opacity=".55"/>
+    <circle cx="491" cy="340" r="4" fill="#6EE7B7"/><text x="504" y="344.5" fill="#D1FAE5">EVIDENCE + RETEST</text>
+  </g>
+  <text x="91" y="426" fill="#71717A" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" letter-spacing="2.1">DISCOVER  →  ASSIGN  →  REMEDIATE  →  VERIFY</text>
+  <g filter="url(#shadow)">
+    <rect x="826" y="79" width="692" height="350" rx="24" fill="url(#card)" stroke="#A1A1AA" stroke-opacity=".3"/>
+    <rect x="846" y="99" width="652" height="310" rx="16" stroke="#FCA5A5" stroke-opacity=".15"/>
+    <circle cx="871" cy="124" r="4" fill="#FB7185"/><circle cx="887" cy="124" r="4" fill="#FBBF24"/><circle cx="903" cy="124" r="4" fill="#34D399"/>
+    <text x="923" y="129" fill="#A1A1AA" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" letter-spacing="2">REMEDIATION TRACE</text>
+    <g font-family="Inter,Segoe UI,Arial,sans-serif">
+      <rect x="872" y="158" width="600" height="63" rx="11" fill="#121827" stroke="#FB7185" stroke-opacity=".5"/>
+      <rect x="888" y="174" width="30" height="30" rx="8" fill="#BE123C" fill-opacity=".2" stroke="#FB7185" stroke-opacity=".5"/>
+      <path d="M903 180L911 184V190C911 196 907 199 903 201C899 199 895 196 895 190V184L903 180Z" stroke="#FDA4AF" stroke-width="1.5" stroke-linejoin="round"/>
+      <text x="932" y="182" fill="#FDA4AF" font-size="10" font-weight="700" letter-spacing="1.1">FINDING  /  FT-024</text>
+      <text x="932" y="203" fill="#F4F4F5" font-size="15" font-weight="600">Outdated service exposed on asset</text>
+      <rect x="1346" y="178" width="105" height="23" rx="11.5" fill="#7F1D1D" fill-opacity=".36" stroke="#F87171" stroke-opacity=".55"/>
+      <text x="1398.5" y="193" fill="#FECACA" font-size="10" font-weight="700" text-anchor="middle" letter-spacing=".7">OPEN</text>
+      <path d="M1172 221V244" stroke="#FB7185" stroke-opacity=".7" stroke-width="2" stroke-linecap="round"/>
+      <path d="M1166 238L1172 245L1178 238" stroke="#FB7185" stroke-opacity=".7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="872" y="249" width="600" height="55" rx="11" fill="#172018" stroke="#6EE7B7" stroke-opacity=".45"/>
+      <circle cx="905" cy="276" r="13" fill="#065F46" fill-opacity=".5" stroke="#6EE7B7" stroke-opacity=".7"/>
+      <path d="M899 276L903 280L911 271" stroke="#A7F3D0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="932" y="270" fill="#A7F3D0" font-size="10" font-weight="700" letter-spacing="1.1">REMEDIATION</text>
+      <text x="932" y="289" fill="#F4F4F5" font-size="14" font-weight="600">Owner assigned · evidence recorded</text>
+      <path d="M1172 304V326" stroke="#6EE7B7" stroke-opacity=".7" stroke-width="2" stroke-linecap="round"/>
+      <path d="M1166 320L1172 327L1178 320" stroke="#6EE7B7" stroke-opacity=".7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="872" y="331" width="600" height="54" rx="11" fill="#142234" stroke="#60A5FA" stroke-opacity=".5"/>
+      <circle cx="905" cy="358" r="13" fill="#1D4ED8" fill-opacity=".3" stroke="#93C5FD" stroke-opacity=".8"/>
+      <path d="M899 358L903 362L911 353" stroke="#BFDBFE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="932" y="352" fill="#BFDBFE" font-size="10" font-weight="700" letter-spacing="1.1">RETEST</text>
+      <text x="932" y="371" fill="#F4F4F5" font-size="14" font-weight="600">Record the outcome · close or reopen</text>
+    </g>
+  </g>
+  <rect x=".75" y=".75" width="1598.5" height="498.5" rx="27.25" stroke="#A1A1AA" stroke-opacity=".16" stroke-width="1.5"/>
+</svg>
