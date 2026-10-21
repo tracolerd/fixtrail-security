@@ -51,6 +51,66 @@ namespace FixTrailSecurity.Api.Migrations
                     b.ToTable("Assets");
                 });
 
+            modelBuilder.Entity("FixTrailSecurity.Core.Entities.AuditEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FindingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PerformedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FindingId");
+
+                    b.ToTable("AuditEvents");
+                });
+
+            modelBuilder.Entity("FixTrailSecurity.Core.Entities.EvidenceReference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EvidenceUrlOrPath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("RemediationTaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RemediationTaskId");
+
+                    b.ToTable("EvidenceReferences");
+                });
+
             modelBuilder.Entity("FixTrailSecurity.Core.Entities.Finding", b =>
                 {
                     b.Property<Guid>("Id")
@@ -118,6 +178,84 @@ namespace FixTrailSecurity.Api.Migrations
                     b.ToTable("FindingOccurrences");
                 });
 
+            modelBuilder.Entity("FixTrailSecurity.Core.Entities.RemediationTask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AssignedTo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FindingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FindingId");
+
+                    b.ToTable("RemediationTasks");
+                });
+
+            modelBuilder.Entity("FixTrailSecurity.Core.Entities.RetestRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("FindingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsSuccessful")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("RetestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RetestedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FindingId");
+
+                    b.ToTable("RetestRecords");
+                });
+
+            modelBuilder.Entity("FixTrailSecurity.Core.Entities.AuditEvent", b =>
+                {
+                    b.HasOne("FixTrailSecurity.Core.Entities.Finding", null)
+                        .WithMany()
+                        .HasForeignKey("FindingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FixTrailSecurity.Core.Entities.EvidenceReference", b =>
+                {
+                    b.HasOne("FixTrailSecurity.Core.Entities.RemediationTask", null)
+                        .WithMany()
+                        .HasForeignKey("RemediationTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("FixTrailSecurity.Core.Entities.Finding", b =>
                 {
                     b.HasOne("FixTrailSecurity.Core.Entities.Asset", null)
@@ -128,6 +266,24 @@ namespace FixTrailSecurity.Api.Migrations
                 });
 
             modelBuilder.Entity("FixTrailSecurity.Core.Entities.FindingOccurrence", b =>
+                {
+                    b.HasOne("FixTrailSecurity.Core.Entities.Finding", null)
+                        .WithMany()
+                        .HasForeignKey("FindingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FixTrailSecurity.Core.Entities.RemediationTask", b =>
+                {
+                    b.HasOne("FixTrailSecurity.Core.Entities.Finding", null)
+                        .WithMany()
+                        .HasForeignKey("FindingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FixTrailSecurity.Core.Entities.RetestRecord", b =>
                 {
                     b.HasOne("FixTrailSecurity.Core.Entities.Finding", null)
                         .WithMany()
