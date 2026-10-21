@@ -21,4 +21,9 @@ export class ApiService {
   createFinding(finding: Partial<Finding>): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/findings`, finding);
   }
+  uploadFindingsFile(assetId: string, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<any>(`${this.apiUrl}/importer/upload/${assetId}`, formData);
+  }
 }
