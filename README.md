@@ -250,7 +250,7 @@ Open the local Angular URL printed in the terminal (by default, `http://localhos
 
 The workflow at `.github/workflows/ci.yml` runs on pushes and pull requests targeting `main`. It restores and builds the .NET solution, runs xUnit tests, installs Angular dependencies, and builds the Angular client.
 
-The most recent workflow run at the time of this README update completed successfully: [GitHub Actions run #1](https://github.com/tracolerd/fixtrail-security/actions/runs/39640105739). This validates the pipeline's current build/test steps. It does not prove production security, exercise a deployed database-backed application end to end, or verify a full browser workflow against a hosted API.
+The initial implementation's workflow run completed successfully before the README-only changes: [GitHub Actions run #1](https://github.com/tracolerd/fixtrail-security/actions/runs/39640105739). The README/banner commits also trigger the same CI workflow; check the [Actions page](https://github.com/tracolerd/fixtrail-security/actions) for their latest status. A passing pipeline validates its configured build/test steps, but does not prove production security, exercise a deployed database-backed application end to end, or verify a full browser workflow against a hosted API.
 
 The current test suite covers entity behavior, finding status changes, basic workflow entity construction, and Nmap parser behavior. It does not yet provide broad controller/API integration coverage, authorization tests, import fuzzing, database transaction tests, or full remediation lifecycle tests.
 
