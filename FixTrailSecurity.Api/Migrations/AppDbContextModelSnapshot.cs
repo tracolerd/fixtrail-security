@@ -210,7 +210,8 @@ namespace FixTrailSecurity.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssetId");
+                    b.HasIndex("AssetId", "Title", "Source")
+                        .IsUnique();
 
                     b.ToTable("Findings");
                 });
