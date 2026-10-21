@@ -15,9 +15,8 @@ import { Finding } from '../../models/finding.model';
         <a routerLink="/assets" style="color: #0056b3; text-decoration: none; font-size: 14px;">&larr; Back to Assets</a>
       </div>
       <div style="display: flex; gap: 20px;">
-        <!-- Manual Finding Form -->
         <div style="flex: 1; background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #ffeeba;">
-          <h4 style="margin-top: 0; color: #856404;">Report New Finding Manually</h4>
+          <h4 style="margin-top: 0; color: #856404;">Report New Finding</h4>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <input [(ngModel)]="newFinding.title" placeholder="Finding Title" style="padding: 8px;" />
             <input [(ngModel)]="newFinding.source" placeholder="Source Scanner" style="padding: 8px;" />
@@ -27,13 +26,11 @@ import { Finding } from '../../models/finding.model';
           <textarea [(ngModel)]="newFinding.description" placeholder="Description details..." style="width: 100%; margin-top: 10px; padding: 8px; box-sizing: border-box;"></textarea>
           <button (click)="addFinding()" style="margin-top: 10px; padding: 9px 15px; background: #d39e00; color: white; border: none; border-radius: 3px; cursor: pointer;">Save Finding</button>
         </div>
-        <!-- JSON File Importer -->
         <div style="flex: 1; background: #e2e3e5; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #d6d8db;">
-          <h4 style="margin-top: 0; color: #383d41;">Import from Scanner (.json / Nmap .xml)</h4>
-          <p style="font-size: 13px; color: #666; margin-top: 0;">JSON Array or Nmap XML Report</p>
+          <h4 style="margin-top: 0; color: #383d41;">Batch Import (.json / .xml)</h4>
           <input type="file" accept=".json,.xml" (change)="onFileSelected($event)" style="margin-bottom: 15px;" />
           <br/>
-          <button (click)="uploadFile()" [disabled]="!selectedFile" [ngStyle]="{'background': selectedFile ? '#28a745' : '#ccc'}" style="padding: 9px 15px; color: white; border: none; border-radius: 3px; cursor: pointer;">Upload & Parse JSON</button>
+          <button (click)="uploadFile()" [disabled]="!selectedFile" [ngStyle]="{'background': selectedFile ? '#28a745' : '#ccc'}" style="padding: 9px 15px; color: white; border: none; border-radius: 3px; cursor: pointer;">Upload & Parse</button>
         </div>
       </div>
       <table style="width: 100%; border-collapse: collapse; text-align: left;">
@@ -46,9 +43,19 @@ import { Finding } from '../../models/finding.model';
           </tr>
         </thead>
         <tbody>
-          <tr>
+          <tr *ngFor="let f of findings" style="border-bottom: 1px solid #eee;">
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ f.title }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ f.sourceSeverity }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ f.source }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">
+              <span [ngStyle]="{'color': f.status === 0 ? 'red' : 'green'}">
+                {{ f.status === 0 ? 'Open' : f.status === 1 ? 'Assigned' : f.status === 2 ? 'Mitigated' : f.status === 3 ? 'Retesting' : f.status === 4 ? 'Closed' : 'Reopened' }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="findings.length === 0">
             <td colspan="4" style="padding: 15px; text-align: center; color: #666; border: 1px solid #ccc;">
-              Finding list specific to Asset ID: {{ assetId }} will appear here.
+              No findings recorded for this asset yet.
             </td>
           </tr>
         </tbody>
@@ -61,10 +68,18 @@ export class FindingsComponent implements OnInit {
   route = inject(ActivatedRoute);
   assetId: string = '';
   selectedFile: File | null = null;
+  findings: Finding[] = [];
   newFinding: Partial<Finding> = { title: '', source: '', sourceSeverity: '', description: '', externalId: '' };
   ngOnInit(): void {
     this.assetId = this.route.snapshot.paramMap.get('assetId') || '';
     this.newFinding.assetId = this.assetId;
+    this.loadFindings();
+  }
+  loadFindings(): void {
+    this.apiService.getFindingsByAsset(this.assetId).subscribe({
+      next: (data) => this.findings = data,
+      error: (err) => console.error('Error loading findings', err)
+    });
   }
   addFinding(): void {
     if (!this.newFinding.title || !this.newFinding.source || !this.newFinding.sourceSeverity) {
@@ -75,8 +90,9 @@ export class FindingsComponent implements OnInit {
       next: (res) => {
         alert('Finding recorded successfully!');
         this.newFinding = { assetId: this.assetId, title: '', source: '', sourceSeverity: '', description: '', externalId: '' };
+        this.loadFindings();
       },
-      error: (err) => alert('Failed to create finding.')
+      error: (err) => alert(err.error?.message || 'Failed to create finding.')
     });
   }
   onFileSelected(event: any): void {
@@ -94,12 +110,11 @@ export class FindingsComponent implements OnInit {
       next: (res) => {
         alert(`${res.message}\nNew: ${res.newFindingsAdded}, Updated: ${res.existingFindingsUpdated}`);
         this.selectedFile = null;
+        this.loadFindings();
       },
       error: (err) => {
-        console.error('Upload error', err);
-        alert(err.error?.message || 'Failed to upload JSON file.');
+        alert(err.error?.message || 'Failed to upload file.');
       }
     });
   }
 }
-

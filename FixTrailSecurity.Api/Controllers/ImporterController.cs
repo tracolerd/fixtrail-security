@@ -27,8 +27,7 @@ namespace FixTrailSecurity.Api.Controllers
             if (file == null || file.Length == 0) return BadRequest(new { message = "File is empty or missing." });
             if (file.Length > MaxFileSize) return BadRequest(new { message = "File exceeds the 5MB size limit." });
             var ext = Path.GetExtension(file.FileName).ToLower();
-            if (ext != ".json" && ext != ".xml")
-                return BadRequest(new { message = "Only JSON and XML files are supported." });
+            if (ext != ".json" && ext != ".xml") return BadRequest(new { message = "Only JSON and XML files are supported." });
             var assetExists = await _context.Assets.AnyAsync(a => a.Id == assetId);
             if (!assetExists) return NotFound(new { message = "Asset not found." });
             List<ImportedFindingDto> importedFindings = new();
@@ -43,42 +42,50 @@ namespace FixTrailSecurity.Api.Controllers
                 else if (ext == ".xml")
                 {
                     var parsedNmap = _nmapParser.ParseNmapXml(stream);
-                    importedFindings.AddRange(parsedNmap.Select(p => new ImportedFindingDto
-                    {
-                        Title = p.Title,
-                        Description = p.Description,
-                        Source = p.Source,
-                        SourceSeverity = p.SourceSeverity
-                    }));
+                    importedFindings.AddRange(parsedNmap.Select(p => new ImportedFindingDto { Title = p.Title, Description = p.Description, Source = p.Source, SourceSeverity = p.SourceSeverity }));
                 }
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = $"Failed to parse file: {ex.Message}" });
+                return BadRequest(new { message = "Failed to parse file structure.", details = ex.Message });
             }
-            if (!importedFindings.Any())
-                return BadRequest(new { message = "No valid findings found in the file." });
+            if (!importedFindings.Any()) return BadRequest(new { message = "No valid findings found in the file." });
             var newFindingsCount = 0;
             var duplicateCount = 0;
-            foreach (var dto in importedFindings)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.SourceSeverity)) continue;
-                var existingFinding = await _context.Findings.FirstOrDefaultAsync(f => f.AssetId == assetId && f.Title == dto.Title && f.Source == dto.Source);
-                if (existingFinding != null)
+                foreach (var dto in importedFindings)
                 {
-                    _context.FindingOccurrences.Add(new FindingOccurrence(existingFinding.Id, "Imported via batch scanner report."));
-                    duplicateCount++;
+                    if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.SourceSeverity)) continue;
+                    var existingFinding = await _context.Findings.FirstOrDefaultAsync(f => f.AssetId == assetId && f.Title == dto.Title && f.Source == dto.Source);
+                    if (existingFinding != null)
+                    {
+                        _context.FindingOccurrences.Add(new FindingOccurrence(existingFinding.Id, "Imported via batch scanner report."));
+                        duplicateCount++;
+                    }
+                    else
+                    {
+                        var finding = new Finding(assetId, dto.Title, dto.Description, dto.Source, dto.SourceSeverity, dto.ExternalId);
+                        _context.Findings.Add(finding);
+                        _context.FindingOccurrences.Add(new FindingOccurrence(finding.Id, "Initial import creation."));
+                        newFindingsCount++;
+                    }
                 }
-                else
-                {
-                    var finding = new Finding(assetId, dto.Title, dto.Description, dto.Source, dto.SourceSeverity, dto.ExternalId);
-                    _context.Findings.Add(finding);
-                    _context.FindingOccurrences.Add(new FindingOccurrence(finding.Id, "Initial import creation."));
-                    newFindingsCount++;
-                }
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(new { message = "Import completed successfully (All-or-Nothing policy enforced).", newFindingsAdded = newFindingsCount, existingFindingsUpdated = duplicateCount });
             }
-            await _context.SaveChangesAsync();
-            return Ok(new { message = "Import completed successfully.", newFindingsAdded = newFindingsCount, existingFindingsUpdated = duplicateCount });
+            catch (DbUpdateException)
+            {
+                await transaction.RollbackAsync();
+                return Conflict(new { message = "Concurrent modification violation detected. Import rolled back to maintain data integrity." });
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { message = "An internal database error occurred. Transaction rolled back safely." });
+            }
         }
     }
 }

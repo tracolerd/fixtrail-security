@@ -18,6 +18,9 @@ export class ApiService {
   getFinding(id: string): Observable<Finding> {
     return this.http.get<Finding>(`${this.apiUrl}/findings/${id}`);
   }
+  getFindingsByAsset(assetId: string): Observable<Finding[]> {
+    return this.http.get<Finding[]>(`${this.apiUrl}/findings/asset/${assetId}`);
+  }
   createFinding(finding: Partial<Finding>): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/findings`, finding);
   }

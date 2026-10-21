@@ -31,7 +31,14 @@ namespace FixTrailSecurity.Api.Controllers
             var finding = new Finding(request.AssetId, request.Title, request.Description, request.Source, request.SourceSeverity, request.ExternalId);
             _context.Findings.Add(finding);
             _context.FindingOccurrences.Add(new FindingOccurrence(finding.Id, "Initial finding creation."));
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(new { message = "Concurrency conflict: Finding with the same title and source already created." });
+            }
             return CreatedAtAction(nameof(GetFinding), new { id = finding.Id }, finding);
         }
         [HttpGet("{id}")]
@@ -40,6 +47,12 @@ namespace FixTrailSecurity.Api.Controllers
             var finding = await _context.Findings.FindAsync(id);
             if (finding == null) return NotFound();
             return Ok(finding);
+        }
+        [HttpGet("asset/{assetId}")]
+        public async Task<IActionResult> GetFindingsByAsset(Guid assetId)
+        {
+            var findings = await _context.Findings.Where(f => f.AssetId == assetId).OrderByDescending(f => f.CreatedAt).ToListAsync();
+            return Ok(findings);
         }
     }
 }
