@@ -1,8 +1,9 @@
 ﻿using FixTrailSecurity.Core.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 namespace FixTrailSecurity.Core.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
         public DbSet<Asset> Assets { get; set; }
@@ -15,59 +16,13 @@ namespace FixTrailSecurity.Core.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            // Asset Configuration
-            modelBuilder.Entity<Asset>(entity => 
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Environment).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.Owner).IsRequired().HasMaxLength(100);
-            });
-            // Finding Configuration
-            modelBuilder.Entity<Finding>(entity => 
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Title).IsRequired().HasMaxLength(300);
-                entity.Property(e => e.Source).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.SourceSeverity).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.ExternalId).HasMaxLength(200);
-                entity.HasOne<Asset>().WithMany().HasForeignKey(e => e.AssetId).OnDelete(DeleteBehavior.Cascade);
-            });
-            // Occurrence Configuration
-            modelBuilder.Entity<FindingOccurrence>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.HasOne<Finding>().WithMany().HasForeignKey(e => e.FindingId).OnDelete(DeleteBehavior.Cascade);
-            });
-            // RemediationTask Configuration
-            modelBuilder.Entity<RemediationTask>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.AssignedTo).IsRequired().HasMaxLength(100);
-                entity.HasOne<Finding>().WithMany().HasForeignKey(e => e.FindingId).OnDelete(DeleteBehavior.Cascade);
-            });
-            // EvidenceReference Configuration
-            modelBuilder.Entity<EvidenceReference>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.EvidenceUrlOrPath).IsRequired().HasMaxLength(500);
-                entity.HasOne<RemediationTask>().WithMany().HasForeignKey(e => e.RemediationTaskId).OnDelete(DeleteBehavior.Cascade);
-            });
-            // RetestRecord Configuration
-            modelBuilder.Entity<RetestRecord>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.RetestedBy).IsRequired().HasMaxLength(100);
-                entity.HasOne<Finding>().WithMany().HasForeignKey(e => e.FindingId).OnDelete(DeleteBehavior.Cascade);
-            });
-            // AuditEvent Configuration
-            modelBuilder.Entity<AuditEvent>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Action).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.PerformedBy).IsRequired().HasMaxLength(100);
-                entity.HasOne<Finding>().WithMany().HasForeignKey(e => e.FindingId).OnDelete(DeleteBehavior.Cascade);
-            });
+            modelBuilder.Entity<Asset>(e => { e.HasKey(x => x.Id); e.Property(x => x.Name).IsRequired().HasMaxLength(200); });
+            modelBuilder.Entity<Finding>(e => { e.HasKey(x => x.Id); e.HasOne<Asset>().WithMany().HasForeignKey(x => x.AssetId).OnDelete(DeleteBehavior.Cascade); });
+            modelBuilder.Entity<FindingOccurrence>(e => { e.HasKey(x => x.Id); e.HasOne<Finding>().WithMany().HasForeignKey(x => x.FindingId).OnDelete(DeleteBehavior.Cascade); });
+            modelBuilder.Entity<RemediationTask>(e => { e.HasKey(x => x.Id); e.HasOne<Finding>().WithMany().HasForeignKey(x => x.FindingId).OnDelete(DeleteBehavior.Cascade); });
+            modelBuilder.Entity<EvidenceReference>(e => { e.HasKey(x => x.Id); e.HasOne<RemediationTask>().WithMany().HasForeignKey(x => x.RemediationTaskId).OnDelete(DeleteBehavior.Cascade); });
+            modelBuilder.Entity<RetestRecord>(e => { e.HasKey(x => x.Id); e.HasOne<Finding>().WithMany().HasForeignKey(x => x.FindingId).OnDelete(DeleteBehavior.Cascade); });
+            modelBuilder.Entity<AuditEvent>(e => { e.HasKey(x => x.Id); e.HasOne<Finding>().WithMany().HasForeignKey(x => x.FindingId).OnDelete(DeleteBehavior.Cascade); });
         }
     }
 }
