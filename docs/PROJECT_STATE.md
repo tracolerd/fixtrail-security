@@ -1,12 +1,11 @@
 ﻿# FixTrail Security - Project State
 ## Mission
 Asset-এ পাওয়া security findings normalize করে remediation owner, priority, due date, evidence, retest outcome এবং audit history track করা। Scanner report-কে actionable workflow-তে রূপান্তর করা।
-## Current Phase: Phase 3
-- [x] Phase 0: Environment Setup Complete
-- [x] Phase 1: ASP.NET Core Scaffold & Asset Domain Complete
-- [x] Phase 2: Asset and finding CRUD with validation Complete
-- [x] Create RemediationTask, EvidenceReference, RetestRecord, and AuditEvent models
-- [x] Update AppDbContext and apply AddRemediationAndAudit migration
-- [ ] Create API endpoints for Task assignment and Retest workflow
-## Next Phase: Phase 4
-Angular frontend for assets/findings/cases.
+## Current Phase: Phase 4
+- [x] Phase 0 to 3: Backend APIs, DB Migrations, and Domain Logic Complete
+- [x] Configure CORS in .NET API for Angular client
+- [x] Scaffold Angular standalone application
+- [ ] Create Angular services and models for API communication
+- [ ] Build UI components for Assets and Findings dashboard
+## Next Phase: Phase 5
+Validated sample importer and export logic.
