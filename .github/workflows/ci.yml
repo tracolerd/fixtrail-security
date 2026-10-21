@@ -1,0 +1,32 @@
+﻿name: FixTrail Security CI
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore .NET dependencies
+      run: dotnet restore
+    - name: Build .NET Backend
+      run: dotnet build --no-restore
+    - name: Run xUnit Tests
+      run: dotnet test --no-build --verbosity normal
+    - name: Setup Node.js (Angular)
+      uses: actions/setup-node@v4
+      with:
+        node-version: 24.x
+    - name: Install Angular Dependencies
+      working-directory: ./FixTrailSecurity.Client
+      run: npm install
+    - name: Build Angular Client
+      working-directory: ./FixTrailSecurity.Client
+      run: npm run build
