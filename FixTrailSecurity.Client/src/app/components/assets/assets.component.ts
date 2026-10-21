@@ -1,12 +1,13 @@
 ﻿import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { Asset } from '../../models/asset.model';
 @Component({
   selector: 'app-assets',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div style="font-family: sans-serif;">
       <h3 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">Assets Inventory</h3>
@@ -25,7 +26,7 @@ import { Asset } from '../../models/asset.model';
             <th style="padding: 10px; border: 1px solid #ccc;">Name</th>
             <th style="padding: 10px; border: 1px solid #ccc;">Environment</th>
             <th style="padding: 10px; border: 1px solid #ccc;">Owner</th>
-            <th style="padding: 10px; border: 1px solid #ccc;">Created At</th>
+            <th style="padding: 10px; border: 1px solid #ccc;">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -33,7 +34,9 @@ import { Asset } from '../../models/asset.model';
             <td style="padding: 10px; border: 1px solid #ccc;">{{ asset.name }}</td>
             <td style="padding: 10px; border: 1px solid #ccc;">{{ asset.environment }}</td>
             <td style="padding: 10px; border: 1px solid #ccc;">{{ asset.owner }}</td>
-            <td style="padding: 10px; border: 1px solid #ccc;">{{ asset.createdAt | date:'medium' }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">
+              <a [routerLink]="['/findings', asset.id]" style="color: #0056b3; text-decoration: underline; cursor: pointer;">Manage Findings</a>
+            </td>
           </tr>
           <tr *ngIf="assets.length === 0">
             <td colspan="4" style="padding: 15px; text-align: center; color: #666; border: 1px solid #ccc;">No assets found. Ensure the .NET API is running.</td>
@@ -46,14 +49,8 @@ import { Asset } from '../../models/asset.model';
 export class AssetsComponent implements OnInit {
   apiService = inject(ApiService);
   assets: Asset[] = [];
-  newAsset: Partial<Asset> = {
-    name: '',
-    environment: '',
-    owner: ''
-  };
-  ngOnInit(): void {
-    this.loadAssets();
-  }
+  newAsset: Partial<Asset> = { name: '', environment: '', owner: '' };
+  ngOnInit(): void { this.loadAssets(); }
   loadAssets(): void {
     this.apiService.getAssets().subscribe({
       next: (data) => this.assets = data,
@@ -61,19 +58,13 @@ export class AssetsComponent implements OnInit {
     });
   }
   addAsset(): void {
-    if (!this.newAsset.name) {
-      alert('Asset Name is required!');
-      return;
-    }
+    if (!this.newAsset.name) return alert('Asset Name is required!');
     this.apiService.createAsset(this.newAsset).subscribe({
       next: (created) => {
         this.assets.push(created);
         this.newAsset = { name: '', environment: '', owner: '' };
       },
-      error: (err) => {
-        console.error('Error creating asset', err);
-        alert('Failed to create asset. Is the backend API running on port 5000?');
-      }
+      error: (err) => alert('Failed to create asset.')
     });
   }
 }
