@@ -29,9 +29,9 @@ import { Finding } from '../../models/finding.model';
         </div>
         <!-- JSON File Importer -->
         <div style="flex: 1; background: #e2e3e5; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #d6d8db;">
-          <h4 style="margin-top: 0; color: #383d41;">Import from Scanner (.json)</h4>
-          <p style="font-size: 13px; color: #666; margin-top: 0;">Format: Array of Finding Objects</p>
-          <input type="file" accept=".json" (change)="onFileSelected($event)" style="margin-bottom: 15px;" />
+          <h4 style="margin-top: 0; color: #383d41;">Import from Scanner (.json / Nmap .xml)</h4>
+          <p style="font-size: 13px; color: #666; margin-top: 0;">JSON Array or Nmap XML Report</p>
+          <input type="file" accept=".json,.xml" (change)="onFileSelected($event)" style="margin-bottom: 15px;" />
           <br/>
           <button (click)="uploadFile()" [disabled]="!selectedFile" [ngStyle]="{'background': selectedFile ? '#28a745' : '#ccc'}" style="padding: 9px 15px; color: white; border: none; border-radius: 3px; cursor: pointer;">Upload & Parse JSON</button>
         </div>
@@ -81,11 +81,11 @@ export class FindingsComponent implements OnInit {
   }
   onFileSelected(event: any): void {
     const file = event.target.files[0];
-    if (file && file.name.endsWith('.json')) {
+    if (file && (file.name.endsWith('.json') || file.name.endsWith('.xml'))) {
       this.selectedFile = file;
     } else {
       this.selectedFile = null;
-      alert('Please select a valid .json file.');
+      alert('Please select a valid .json or .xml file.');
     }
   }
   uploadFile(): void {
@@ -102,3 +102,4 @@ export class FindingsComponent implements OnInit {
     });
   }
 }
+
