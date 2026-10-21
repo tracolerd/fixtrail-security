@@ -35,11 +35,9 @@ import { Finding, FindingStatus } from '../../models/finding.model';
           </tr>
         </thead>
         <tbody>
-          <!-- MVP Note: In a full app, we would fetch findings by asset ID. 
-               For this slice, we will display a placeholder until the filter API is ready. -->
           <tr>
             <td colspan="4" style="padding: 15px; text-align: center; color: #666; border: 1px solid #ccc;">
-              Finding list specific to Asset ID: {{ assetId }} will appear here. (Requires GET /findings/asset/{id} API)
+              Finding list specific to Asset ID: {{ assetId }} will appear here. (Requires GET /findings/asset/id API)
             </td>
           </tr>
         </tbody>
@@ -71,7 +69,6 @@ export class FindingsComponent implements OnInit {
     this.apiService.createFinding(this.newFinding).subscribe({
       next: (res) => {
         alert(res.message || 'Finding recorded successfully!');
-        // Reset form
         this.newFinding = { assetId: this.assetId, title: '', source: '', sourceSeverity: '', description: '', externalId: '' };
       },
       error: (err) => {
