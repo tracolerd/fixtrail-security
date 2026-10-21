@@ -1,11 +1,13 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using FixTrailSecurity.Api.DTOs;
 using FixTrailSecurity.Core.Constants;
 using FixTrailSecurity.Core.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 namespace FixTrailSecurity.Api.Controllers
 {
@@ -25,14 +27,20 @@ namespace FixTrailSecurity.Api.Controllers
         [HttpPost("bootstrap")]
         public async Task<IActionResult> BootstrapAdmin([FromBody] BootstrapAdminRequest request)
         {
-            // Secure bootstrap: Only runs if NO admin exists in the system
+            // Secure Bootstrap Gate
+            var expectedSecret = _configuration["BootstrapSettings:Secret"];
+            if (string.IsNullOrEmpty(expectedSecret)) return NotFound(new { message = "Bootstrap is explicitly disabled." });
+            if (!Request.Headers.TryGetValue("X-Bootstrap-Secret", out var providedSecret) || 
+                !CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expectedSecret!), Encoding.UTF8.GetBytes(providedSecret.ToString()))) 
+            {
+                return Unauthorized(new { message = "Invalid bootstrap secret." });
+            }
             var adminRoleExists = await _roleManager.RoleExistsAsync(RoleConstants.Admin);
             if (adminRoleExists)
             {
                 var admins = await _userManager.GetUsersInRoleAsync(RoleConstants.Admin);
                 if (admins.Any()) return BadRequest(new { message = "Bootstrap failed: Administrator already exists." });
             }
-            // Seed Roles
             string[] roleNames = { RoleConstants.Admin, RoleConstants.SecurityAnalyst, RoleConstants.RemediationOwner, RoleConstants.ReadOnly };
             foreach (var role in roleNames)
             {
@@ -44,16 +52,24 @@ namespace FixTrailSecurity.Api.Controllers
             if (result.Succeeded)
             {
                 await _userManager.AddToRoleAsync(user, RoleConstants.Admin);
-                return Ok(new { message = "Bootstrap successful. Initial Admin account created." });
+                return Ok(new { message = "Bootstrap successful. Initial Admin account created. Disable bootstrap secret now." });
             }
             return BadRequest(result.Errors);
         }
         [HttpPost("login")]
+        [EnableRateLimiting("LoginPolicy")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+            if (user == null) return Unauthorized(new { message = "Invalid email or password." });
+            if (await _userManager.IsLockedOutAsync(user))
+                return StatusCode(423, new { message = "Account locked out due to multiple failed attempts." });
+            if (!await _userManager.CheckPasswordAsync(user, request.Password))
+            {
+                await _userManager.AccessFailedAsync(user);
                 return Unauthorized(new { message = "Invalid email or password." });
+            }
+            await _userManager.ResetAccessFailedCountAsync(user);
             var roles = await _userManager.GetRolesAsync(user);
             var claims = new List<Claim>
             {
@@ -61,11 +77,9 @@ namespace FixTrailSecurity.Api.Controllers
                 new Claim(ClaimTypes.Email, user.Email!),
                 new Claim(ClaimTypes.Name, user.FullName)
             };
-            foreach (var role in roles)
-                claims.Add(new Claim(ClaimTypes.Role, role));
+            foreach (var role in roles) claims.Add(new Claim(ClaimTypes.Role, role));
             var secret = _configuration["JwtSettings:Secret"];
-            if (string.IsNullOrEmpty(secret)) throw new InvalidOperationException("JWT Secret is not configured.");
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var token = new JwtSecurityToken(
                 issuer: _configuration["JwtSettings:Issuer"],

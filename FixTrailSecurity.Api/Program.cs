@@ -5,6 +5,7 @@ using FixTrailSecurity.Core.Entities;
 using FixTrailSecurity.Core.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
@@ -14,18 +15,23 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAngularClient", p => p.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod());
 });
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString) || connectionString.Contains("YOUR_DB_PASSWORD_HERE")) {
+    throw new InvalidOperationException("Database connection string is not properly configured. Please use .NET User Secrets to set 'ConnectionStrings:DefaultConnection'.");
+}
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("FixTrailSecurity.Api")));
-// Configure Identity
+    options.UseNpgsql(connectionString, b => b.MigrationsAssembly("FixTrailSecurity.Api")));
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
     options.Password.RequireNonAlphanumeric = true;
     options.Password.RequireUppercase = true;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
-// Configure JWT Authentication
 var jwtSecret = builder.Configuration["JwtSettings:Secret"];
 if (string.IsNullOrEmpty(jwtSecret)) throw new InvalidOperationException("JWT Secret missing.");
 builder.Services.AddAuthentication(options => {
@@ -40,20 +46,26 @@ builder.Services.AddAuthentication(options => {
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
         ValidAudience = builder.Configuration["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+        ClockSkew = TimeSpan.Zero
     };
 });
-// Configure RBAC Policies
 builder.Services.AddAuthorization(options => {
     options.AddPolicy("RequireAdmin", policy => policy.RequireRole(RoleConstants.Admin));
     options.AddPolicy("RequireAnalystOrAdmin", policy => policy.RequireRole(RoleConstants.Admin, RoleConstants.SecurityAnalyst));
     options.AddPolicy("RequireRemediationOwner", policy => policy.RequireRole(RoleConstants.Admin, RoleConstants.SecurityAnalyst, RoleConstants.RemediationOwner));
 });
+builder.Services.AddRateLimiter(options => {
+    options.AddFixedWindowLimiter("LoginPolicy", opt => {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 5;
+    });
+});
 builder.Services.AddScoped<NmapXmlParserService>();
 var app = builder.Build();
 if (app.Environment.IsDevelopment()) { app.UseSwagger(); app.UseSwaggerUI(); }
 app.UseHttpsRedirection();
-// Security Headers
+app.UseRateLimiter();
 app.Use(async (context, next) => {
     context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
     context.Response.Headers.Append("X-Frame-Options", "DENY");
@@ -61,7 +73,7 @@ app.Use(async (context, next) => {
     await next();
 });
 app.UseCors("AllowAngularClient");
-app.UseAuthentication(); // Must be before Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
