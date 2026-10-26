@@ -3,6 +3,7 @@ using FixTrailSecurity.Core.Constants;
 using FixTrailSecurity.Core.Data;
 using FixTrailSecurity.Core.Entities;
 using FixTrailSecurity.Core.Services;
+using FixTrailSecurity.Core.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -32,8 +33,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
-var jwtSecret = builder.Configuration["JwtSettings:Secret"];
-if (string.IsNullOrEmpty(jwtSecret)) throw new InvalidOperationException("JWT Secret missing.");
+var jwtSecret = JwtSecretValidator.RequireStrongSecret(
+    builder.Configuration["JwtSettings:Secret"]);
 builder.Services.AddAuthentication(options => {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
