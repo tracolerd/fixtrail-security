@@ -41,6 +41,28 @@ namespace FixTrailSecurity.Tests
             Assert.Contains("192.168.1.1", finding.Description);
         }
         [Fact]
+        public void ParseNmapXml_WithDtd_ShouldRejectTheDocument()
+        {
+            var xml = "<!DOCTYPE nmaprun [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><nmaprun>&xxe;</nmaprun>";
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml));
+            var parser = new NmapXmlParserService();
+
+            Assert.Throws<InvalidOperationException>(() => parser.ParseNmapXml(stream));
+        }
+
+        [Fact]
+        public void ParseNmapXml_WithTooManyOpenPorts_ShouldRejectTheBatch()
+        {
+            var ports = string.Concat(Enumerable.Range(1, NmapXmlParserService.MaxParsedFindings + 1)
+                .Select(i => $"<port protocol=\"tcp\" portid=\"{(i % 65535) + 1}\"><state state=\"open\"/><service name=\"test\"/></port>"));
+            var xml = $"<nmaprun><host><address addr=\"192.0.2.1\"/><ports>{ports}</ports></host></nmaprun>";
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml));
+            var parser = new NmapXmlParserService();
+
+            Assert.Throws<InvalidOperationException>(() => parser.ParseNmapXml(stream));
+        }
+
+        [Fact]
         public void ParseNmapXml_WithInvalidXml_ShouldThrowException()
         {
             // Arrange

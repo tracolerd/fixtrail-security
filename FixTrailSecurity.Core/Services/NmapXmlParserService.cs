@@ -1,17 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Xml;
 using System.Xml.Linq;
 namespace FixTrailSecurity.Core.Services
 {
     public class NmapXmlParserService
     {
+        public const int MaxParsedFindings = 10_000;
+        private const long MaxXmlCharacters = 5 * 1024 * 1024;
+
         public List<ParsedFinding> ParseNmapXml(Stream xmlStream)
         {
             var findings = new List<ParsedFinding>();
             try
             {
-                var doc = XDocument.Load(xmlStream);
+                var settings = new XmlReaderSettings
+                {
+                    DtdProcessing = DtdProcessing.Prohibit,
+                    XmlResolver = null,
+                    MaxCharactersInDocument = MaxXmlCharacters,
+                    IgnoreComments = true,
+                    IgnoreProcessingInstructions = true
+                };
+                using var reader = XmlReader.Create(xmlStream, settings);
+                var doc = XDocument.Load(reader, LoadOptions.None);
                 var hosts = doc.Descendants("host");
                 foreach (var host in hosts)
                 {
@@ -27,6 +40,9 @@ namespace FixTrailSecurity.Core.Services
                         var product = port.Element("service")?.Attribute("product")?.Value ?? "";
                         var version = port.Element("service")?.Attribute("version")?.Value ?? "";
                         var serviceDetails = string.IsNullOrWhiteSpace(product) ? service : $"{product} {version}".Trim();
+                        if (findings.Count >= MaxParsedFindings)
+                            throw new InvalidOperationException($"Nmap import exceeds the maximum of {MaxParsedFindings} findings.");
+
                         findings.Add(new ParsedFinding
                         {
                             Title = $"Open Port: {portId}/{protocol} ({serviceDetails})",
@@ -36,6 +52,10 @@ namespace FixTrailSecurity.Core.Services
                         });
                     }
                 }
+            }
+            catch (InvalidOperationException)
+            {
+                throw;
             }
             catch (Exception ex)
             {

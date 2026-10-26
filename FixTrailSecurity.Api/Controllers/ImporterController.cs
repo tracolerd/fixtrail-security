@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using FixTrailSecurity.Api.DTOs;
+using FixTrailSecurity.Api.Services;
 using FixTrailSecurity.Core.Data;
 using FixTrailSecurity.Core.Entities;
 using FixTrailSecurity.Core.Services;
@@ -26,17 +27,22 @@ namespace FixTrailSecurity.Api.Controllers
         {
             if (file == null || file.Length == 0) return BadRequest(new { message = "File is empty or missing." });
             if (file.Length > MaxFileSize) return BadRequest(new { message = "File exceeds the 5MB size limit." });
-            var ext = Path.GetExtension(file.FileName).ToLower();
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
             if (ext != ".json" && ext != ".xml") return BadRequest(new { message = "Only JSON and XML files are supported." });
             var assetExists = await _context.Assets.AnyAsync(a => a.Id == assetId);
             if (!assetExists) return NotFound(new { message = "Asset not found." });
-            List<ImportedFindingDto> importedFindings = new();
+            List<ImportedFindingDto?> importedFindings = new();
             try
             {
                 using var stream = file.OpenReadStream();
                 if (ext == ".json")
                 {
-                    var jsonFindings = await JsonSerializer.DeserializeAsync<List<ImportedFindingDto>>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    var jsonOptions = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        MaxDepth = 32
+                    };
+                    var jsonFindings = await JsonSerializer.DeserializeAsync<List<ImportedFindingDto?>>(stream, jsonOptions);
                     if (jsonFindings != null) importedFindings.AddRange(jsonFindings);
                 }
                 else if (ext == ".xml")
@@ -45,19 +51,38 @@ namespace FixTrailSecurity.Api.Controllers
                     importedFindings.AddRange(parsedNmap.Select(p => new ImportedFindingDto { Title = p.Title, Description = p.Description, Source = p.Source, SourceSeverity = p.SourceSeverity }));
                 }
             }
-            catch (Exception ex)
+            catch (JsonException)
             {
-                return BadRequest(new { message = "Failed to parse file structure.", details = ex.Message });
+                return BadRequest(new { message = "The import file contains invalid JSON." });
             }
-            if (!importedFindings.Any()) return BadRequest(new { message = "No valid findings found in the file." });
+            catch (InvalidOperationException)
+            {
+                return BadRequest(new { message = "The import file is invalid or exceeds parser limits." });
+            }
+            catch (System.Xml.XmlException)
+            {
+                return BadRequest(new { message = "The import file contains invalid XML." });
+            }
+            catch (Exception)
+            {
+                // Do not return parser exception messages, file paths, or internal details.
+                return BadRequest(new { message = "Failed to parse the import file." });
+            }
+
+            var validationError = ScannerImportValidator.Validate(importedFindings);
+            if (validationError != null)
+                return BadRequest(new { message = validationError });
+
+            // Validation has proved every item exists and satisfies field limits.
+            // Reject the complete batch before opening a transaction if any row is invalid.
             var newFindingsCount = 0;
             var duplicateCount = 0;
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                foreach (var dto in importedFindings)
+                foreach (var maybeDto in importedFindings)
                 {
-                    if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.SourceSeverity)) continue;
+                    var dto = maybeDto!;
                     var existingFinding = await _context.Findings.FirstOrDefaultAsync(f => f.AssetId == assetId && f.Title == dto.Title && f.Source == dto.Source);
                     if (existingFinding != null)
                     {
@@ -66,7 +91,7 @@ namespace FixTrailSecurity.Api.Controllers
                     }
                     else
                     {
-                        var finding = new Finding(assetId, dto.Title, dto.Description, dto.Source, dto.SourceSeverity, dto.ExternalId);
+                        var finding = new Finding(assetId, dto.Title, dto.Description ?? string.Empty, dto.Source, dto.SourceSeverity, dto.ExternalId);
                         _context.Findings.Add(finding);
                         _context.FindingOccurrences.Add(new FindingOccurrence(finding.Id, "Initial import creation."));
                         newFindingsCount++;
@@ -74,7 +99,7 @@ namespace FixTrailSecurity.Api.Controllers
                 }
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(new { message = "Import completed successfully (All-or-Nothing policy enforced).", newFindingsAdded = newFindingsCount, existingFindingsUpdated = duplicateCount });
+                return Ok(new { message = "Import completed successfully (All-or-Nothing policy enforced).", processedFindings = importedFindings.Count, newFindingsAdded = newFindingsCount, existingFindingsUpdated = duplicateCount });
             }
             catch (DbUpdateException)
             {

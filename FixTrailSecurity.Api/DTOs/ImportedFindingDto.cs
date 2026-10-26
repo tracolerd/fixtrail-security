@@ -5,7 +5,7 @@ namespace FixTrailSecurity.Api.DTOs
     {
         [Required]
         public string Title { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
+        public string? Description { get; set; }
         [Required]
         public string Source { get; set; } = string.Empty;
         public string? ExternalId { get; set; }
