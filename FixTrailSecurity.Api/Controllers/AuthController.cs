@@ -8,6 +8,9 @@ using FixTrailSecurity.Core.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using System.Data;
+using FixTrailSecurity.Core.Data;
 using Microsoft.IdentityModel.Tokens;
 namespace FixTrailSecurity.Api.Controllers
 {
@@ -18,43 +21,112 @@ namespace FixTrailSecurity.Api.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
-        public AuthController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+        private readonly AppDbContext _context;
+        public AuthController(
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            IConfiguration configuration,
+            AppDbContext context)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _configuration = configuration;
+            _context = context;
         }
         [HttpPost("bootstrap")]
         public async Task<IActionResult> BootstrapAdmin([FromBody] BootstrapAdminRequest request)
         {
-            // Secure Bootstrap Gate
+            // Disable bootstrap unless an operator explicitly configures a secret.
             var expectedSecret = _configuration["BootstrapSettings:Secret"];
-            if (string.IsNullOrEmpty(expectedSecret)) return NotFound(new { message = "Bootstrap is explicitly disabled." });
-            if (!Request.Headers.TryGetValue("X-Bootstrap-Secret", out var providedSecret) || 
-                !CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expectedSecret!), Encoding.UTF8.GetBytes(providedSecret.ToString()))) 
-            {
+            if (string.IsNullOrWhiteSpace(expectedSecret))
+                return NotFound(new { message = "Bootstrap is explicitly disabled." });
+
+            if (!Request.Headers.TryGetValue("X-Bootstrap-Secret", out var providedSecret))
                 return Unauthorized(new { message = "Invalid bootstrap secret." });
-            }
-            var adminRoleExists = await _roleManager.RoleExistsAsync(RoleConstants.Admin);
-            if (adminRoleExists)
+
+            var expectedBytes = Encoding.UTF8.GetBytes(expectedSecret);
+            var providedBytes = Encoding.UTF8.GetBytes(providedSecret.ToString());
+            if (!CryptographicOperations.FixedTimeEquals(expectedBytes, providedBytes))
+                return Unauthorized(new { message = "Invalid bootstrap secret." });
+
+            // Identity managers and AppDbContext share the request-scoped EF
+            // context. Serializable isolation prevents concurrent bootstrap
+            // requests from both committing after observing zero admins.
+            await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+            try
             {
                 var admins = await _userManager.GetUsersInRoleAsync(RoleConstants.Admin);
-                if (admins.Any()) return BadRequest(new { message = "Bootstrap failed: Administrator already exists." });
+                if (admins.Count > 0)
+                {
+                    await transaction.RollbackAsync();
+                    return Conflict(new { message = "Bootstrap is already complete; an administrator exists." });
+                }
+
+                string[] roleNames =
+                {
+                    RoleConstants.Admin,
+                    RoleConstants.SecurityAnalyst,
+                    RoleConstants.RemediationOwner,
+                    RoleConstants.ReadOnly
+                };
+
+                foreach (var role in roleNames)
+                {
+                    if (await _roleManager.RoleExistsAsync(role))
+                        continue;
+
+                    var roleResult = await _roleManager.CreateAsync(new IdentityRole(role));
+                    if (!roleResult.Succeeded)
+                    {
+                        await transaction.RollbackAsync();
+                        return Conflict(new
+                        {
+                            message = "Bootstrap could not initialize required roles.",
+                            errors = roleResult.Errors.Select(error => error.Code)
+                        });
+                    }
+                }
+
+                var user = new ApplicationUser
+                {
+                    UserName = request.Email,
+                    Email = request.Email,
+                    FullName = request.FullName
+                };
+                var userResult = await _userManager.CreateAsync(user, request.Password);
+                if (!userResult.Succeeded)
+                {
+                    await transaction.RollbackAsync();
+                    return BadRequest(userResult.Errors);
+                }
+
+                var adminResult = await _userManager.AddToRoleAsync(user, RoleConstants.Admin);
+                if (!adminResult.Succeeded)
+                {
+                    await transaction.RollbackAsync();
+                    return Conflict(new
+                    {
+                        message = "Bootstrap could not assign the administrator role.",
+                        errors = adminResult.Errors.Select(error => error.Code)
+                    });
+                }
+
+                await transaction.CommitAsync();
+                return Ok(new
+                {
+                    message = "Bootstrap successful. Initial Admin account created. Disable BootstrapSettings:Secret now."
+                });
             }
-            string[] roleNames = { RoleConstants.Admin, RoleConstants.SecurityAnalyst, RoleConstants.RemediationOwner, RoleConstants.ReadOnly };
-            foreach (var role in roleNames)
+            catch (DbUpdateException)
             {
-                if (!await _roleManager.RoleExistsAsync(role))
-                    await _roleManager.CreateAsync(new IdentityRole(role));
+                await transaction.RollbackAsync();
+                return Conflict(new { message = "Concurrent bootstrap or database conflict; no partial bootstrap was committed." });
             }
-            var user = new ApplicationUser { UserName = request.Email, Email = request.Email, FullName = request.FullName };
-            var result = await _userManager.CreateAsync(user, request.Password);
-            if (result.Succeeded)
+            catch (InvalidOperationException)
             {
-                await _userManager.AddToRoleAsync(user, RoleConstants.Admin);
-                return Ok(new { message = "Bootstrap successful. Initial Admin account created. Disable bootstrap secret now." });
+                await transaction.RollbackAsync();
+                return Conflict(new { message = "Bootstrap could not complete because another initialization operation is in progress." });
             }
-            return BadRequest(result.Errors);
         }
         [HttpPost("login")]
         [EnableRateLimiting("LoginPolicy")]
