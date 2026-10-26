@@ -19,7 +19,7 @@ public class JwtSecretValidatorTests
     [Fact]
     public void RequireStrongSecret_AcceptsNonPlaceholderSecretAtLeast32Bytes()
     {
-        const string secret = "v8K2p9Q4x7N1m6R3s5T0u8W2y4A7c9D1";
+        const string secret = "unit-test-public-fixture-not-secret-1234567890";
 
         Assert.Equal(secret, JwtSecretValidator.RequireStrongSecret(secret));
     }
