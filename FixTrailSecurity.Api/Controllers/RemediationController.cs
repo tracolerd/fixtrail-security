@@ -24,6 +24,9 @@ namespace FixTrailSecurity.Api.Controllers
         {
             var finding = await _context.Findings.FindAsync(findingId);
             if (finding == null) return NotFound(new { message = "Finding not found." });
+            if (!finding.CanTransitionTo(FindingStatus.Assigned))
+                return Conflict(new { message = $"A finding in status {finding.Status} cannot be assigned a new remediation task." });
+
             var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "Unknown User";
             var task = new RemediationTask(finding.Id, request.AssignedTo, request.DueDate, request.Notes);
             _context.RemediationTasks.Add(task);
@@ -40,6 +43,9 @@ namespace FixTrailSecurity.Api.Controllers
             var finding = await _context.Findings.FindAsync(findingId);
             var task = await _context.RemediationTasks.FirstOrDefaultAsync(t => t.Id == taskId && t.FindingId == findingId);
             if (finding == null || task == null) return NotFound(new { message = "Finding or Task not found." });
+            if (!finding.CanTransitionTo(FindingStatus.Mitigated))
+                return Conflict(new { message = $"Evidence cannot be submitted while the finding is in status {finding.Status}." });
+
             var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "Unknown User";
             var evidence = new EvidenceReference(task.Id, request.EvidenceUrlOrPath, request.Description);
             _context.EvidenceReferences.Add(evidence);
@@ -55,10 +61,13 @@ namespace FixTrailSecurity.Api.Controllers
         {
             var finding = await _context.Findings.FindAsync(findingId);
             if (finding == null) return NotFound(new { message = "Finding not found." });
+            var newStatus = request.IsSuccessful ? FindingStatus.Closed : FindingStatus.Reopened;
+            if (!finding.CanTransitionTo(newStatus))
+                return Conflict(new { message = $"A finding in status {finding.Status} cannot transition to {newStatus} through retest." });
+
             var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "Unknown User";
             var retest = new RetestRecord(finding.Id, request.IsSuccessful, userEmail, request.Notes);
             _context.RetestRecords.Add(retest);
-            var newStatus = request.IsSuccessful ? FindingStatus.Closed : FindingStatus.Reopened;
             finding.UpdateStatus(newStatus);
             var auditAction = request.IsSuccessful ? "RetestPassed" : "RetestFailed";
             var audit = new AuditEvent(finding.Id, auditAction, $"Retest conducted. Status changed to {newStatus}", userEmail);
